@@ -1,11 +1,15 @@
+"""Manage tower maintenance records using an in-memory SQLite database."""
 import sqlite3
 
 conn = sqlite3.connect(":memory:")
-conn.execute("CREATE TABLE towers (id INTEGER PRIMARY KEY, site TEXT, last_service INTEGER, faults INTEGER)")
-service_count = 0
+conn.execute(
+    "CREATE TABLE towers "
+    "(id INTEGER PRIMARY KEY, site TEXT, "
+    "last_service INTEGER, faults INTEGER)"
+)
 
-
-def addTower(site, last_service, faults=0):
+def add_tower(site, last_service, faults=0):
+    """Add a tower and its maintenance information to the database."""
     conn.execute(
         "INSERT INTO towers (site, last_service, faults) VALUES (?, ?, ?)",
         (site, last_service, faults),
@@ -13,17 +17,24 @@ def addTower(site, last_service, faults=0):
     conn.commit()
 
 
-def serviceTower(tower_id, year):
-    global service_count
+def service_tower(tower_id, year):
+    """Service a tower and return whether the update succeeded."""
     try:
-        conn.execute("UPDATE towers SET last_service = ?, faults = 0 WHERE id = ?", (year, tower_id))
-        service_count += 1
-    except Exception:
+        conn.execute(
+            "UPDATE towers "
+            "SET last_service = ?, faults = 0 "
+            "WHERE id = ?",
+            (year, tower_id),
+        )
+        conn.commit()
+        return True
+    except sqlite3.Error:
         print("service failed")
-
+        return False
 
 
 def overdue(year):
+    """Return sites that have not been serviced for at least two years."""
     rows = conn.execute("SELECT site, last_service FROM towers").fetchall()
     result = []
     for site, last in rows:
@@ -32,24 +43,35 @@ def overdue(year):
     return result
 
 
-def riskLevel(tower_id):
+def risk_level(tower_id):
+    """Return the risk level of a tower based on its recorded faults."""
     row = conn.execute("SELECT faults FROM towers WHERE id = ?", (tower_id,)).fetchone()
     if row[0] > 3:
         return "high"
-    else:
-        return "normal"
+    return "normal"
 
 
 def snapshot():
+    """Return a snapshot of all tower records."""
     return conn.execute("SELECT * FROM towers").fetchall()
 
 
 def main():
-    addTower("Ridge-A", 2021, 5)
-    addTower("Coast-B", 2024)
-    serviceTower(2, 2025)
-    total=len(snapshot())
-    print(overdue(2025), riskLevel(1), total, service_count)
+    """Run a demonstration of the tower maintenance system."""
+    add_tower("Ridge-A", 2021, 5)
+    add_tower("Coast-B", 2024)
+
+    service_count = int(service_tower(2, 2025))
+
+    total = len(snapshot())
+
+    print(
+        overdue(2025),
+        risk_level(1),
+        total,
+        service_count,
+    )
 
 
-main()
+if __name__ == "__main__":
+    main()
