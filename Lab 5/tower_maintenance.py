@@ -8,6 +8,7 @@ conn.execute(
     "last_service INTEGER, faults INTEGER)"
 )
 
+
 def add_tower(site, last_service, faults=0):
     """Add a tower and its maintenance information to the database."""
     conn.execute(
@@ -34,7 +35,7 @@ def service_tower(tower_id, year):
 
 
 def overdue(year):
-    """Return sites that have not been serviced for at least two years."""
+    """Return sites overdue for service by at least two years."""
     rows = conn.execute("SELECT site, last_service FROM towers").fetchall()
     result = []
     for site, last in rows:
@@ -44,8 +45,11 @@ def overdue(year):
 
 
 def risk_level(tower_id):
-    """Return the risk level of a tower based on its recorded faults."""
-    row = conn.execute("SELECT faults FROM towers WHERE id = ?", (tower_id,)).fetchone()
+    """Return the tower risk level based on recorded faults."""
+    row = conn.execute(
+        "SELECT faults FROM towers WHERE id = ?",
+        (tower_id,),
+    ).fetchone()
     if row[0] > 3:
         return "high"
     return "normal"
