@@ -1,15 +1,53 @@
 BERTHS = ["SU", "LB", "MB", "UB", "LB", "MB", "UB", "SL"]
 
 def parse_pnr(pnr):
+    if not isinstance(pnr, str):
+        return None
+    if len(pnr) != 10 or not pnr.isascii() or not pnr.isdigit():
+        return None
     return int(pnr[0]), int(pnr[1:])
 
 def journey_distance(distances_csv):
-    distances = [int(d) for d in distances_csv.split(',')]
+    if not isinstance(distances_csv, str):
+        return None
+
+    try:
+        distances = [int(d.strip()) for d in distances_csv.split(',')]
+    except ValueError:
+        return None
+
+    if len(distances) < 2:
+        return None
+
+    if any(d < 0 for d in distances):
+        return None
+
+    if any(distances[i] > distances[i + 1]
+           for i in range(len(distances) - 1)):
+        return None
+
     return distances[-1] - distances[0]
 
 def berth_type(seat):
-    coach, number = seat.split('-')
-    return coach.upper(), BERTHS[int(number) % 8]
+    if not isinstance(seat, str):
+        return None
+
+    parts = seat.split('-')
+
+    if len(parts) != 2:
+        return None
+
+    coach, number = parts
+
+    if not coach.strip() or not number.isascii() or not number.isdigit():
+        return None
+
+    seat_number = int(number)
+
+    if seat_number <= 0:
+        return None
+
+    return coach.upper(), BERTHS[seat_number % 8]
 
 def main():
     print("==== Running parse_pnr ====")
